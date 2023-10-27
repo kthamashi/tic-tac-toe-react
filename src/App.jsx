@@ -1,24 +1,28 @@
-import { useState } from 'react'
-import './App.css'
+import { useEffect, useState } from "react";
+import "./App.css";
 
 function Square({ value, onSquareClick }) {
   return (
-    <button className="square" onClick={onSquareClick}>
+    <button
+      className="square"
+      onClick={onSquareClick}
+      disabled={value ? true : false}
+    >
       {value}
     </button>
   );
 }
 
-function Board({ xIsNext, squares, onPlay }) {
+function Board({ xIsNext, squares, onPlay, playerNames }) {
   function handleClick(i) {
     if (calculateWinner(squares) || squares[i]) {
       return;
     }
     const nextSquares = squares.slice();
     if (xIsNext) {
-      nextSquares[i] = 'X';
+      nextSquares[i] = "X";
     } else {
-      nextSquares[i] = 'O';
+      nextSquares[i] = "O";
     }
     onPlay(nextSquares);
   }
@@ -26,9 +30,11 @@ function Board({ xIsNext, squares, onPlay }) {
   const winner = calculateWinner(squares);
   let status;
   if (winner) {
-    status = 'Winner: ' + winner;
+    status = "Winner: " + winner;
   } else {
-    status = 'Next player: ' + (xIsNext ? 'X' : 'O');
+    status =
+      "Next player: " +
+      (xIsNext ? playerNames.playerXName : playerNames.playerOName);
   }
 
   return (
@@ -54,43 +60,90 @@ function Board({ xIsNext, squares, onPlay }) {
 }
 
 export default function Game() {
-  const [history, setHistory] = useState([Array(9).fill(null)]);
-  const [currentMove, setCurrentMove] = useState(0);
-  const xIsNext = currentMove % 2 === 0;
-  const currentSquares = history[currentMove];
+  const [xIsNext, setXIsNext] = useState(true);
+  const [currentSquares, setCurrentSquares] = useState([
+    ...Array(9).fill(null),
+  ]);
+  const [gameList, setGameList] = useState([]);
+  const [playerNames, setPlayerNames] = useState({
+    playerXName: "Player 1",
+    playerOName: "Player 2",
+  });
+  const [isGameOver, setIsGameOver] = useState(false);
+  const [winningMessage, setWinningMessage] = useState("Draw");
+
+  useEffect(() => {
+    const playerXName = prompt("Enter Player X name:");
+    const playerOName = prompt("Enter Player O name:");
+    setPlayerNames({
+      playerXName: playerXName,
+      playerOName: playerOName,
+    });
+  }, []);
 
   function handlePlay(nextSquares) {
-    const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
-    setHistory(nextHistory);
-    setCurrentMove(nextHistory.length - 1);
-  }
-
-  function jumpTo(nextMove) {
-    setCurrentMove(nextMove);
-  }
-
-  const moves = history.map((squares, move) => {
-    let description;
-    if (move > 0) {
-      description = 'Go to move #' + move;
-    } else {
-      description = 'Go to game start';
+    setCurrentSquares(nextSquares);
+    setXIsNext(!xIsNext);
+    const winner = calculateWinner(nextSquares);
+    if (winner) {
+      gameOver(nextSquares);
     }
-    return (
-      <li key={move}>
-        <button onClick={() => jumpTo(move)}>{description}</button>
-      </li>
+  }
+
+  function gameOver(nextSquares) {
+    setGameList((prev) => [
+      ...prev,
+      {
+        winner: xIsNext ? playerNames.playerXName : playerNames.playerOName,
+        moves: structuredClone(nextSquares),
+      },
+    ]);
+    setWinningMessage(
+      `${xIsNext ? playerNames.playerXName : playerNames.playerOName} Won!`
     );
-  });
+    setIsGameOver(true);
+  }
+
+  function jumpTo(idx) {
+    setCurrentSquares(gameList[idx].moves);
+  }
+
+  const gameHistoryView = (
+    <ol>
+      {gameList.map((game, idx) => (
+        <li key={idx} onClick={() => jumpTo(idx)}>
+          Game {idx + 1} - {game.winner} Wins!
+        </li>
+      ))}
+    </ol>
+  );
+
+  function resetGame() {
+    setCurrentSquares([...Array(9).fill(null)]);
+    setXIsNext(true);
+    setIsGameOver(false);
+  }
 
   return (
-    <div className="game">
-      <div className="game-board">
-        <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} />
+    <div>
+      <div className="game">
+        <div className="game-board">
+          <Board
+            xIsNext={xIsNext}
+            squares={currentSquares}
+            onPlay={handlePlay}
+            playerNames={playerNames}
+          />
+        </div>
+        <div className="history-list">{gameHistoryView}</div>
       </div>
-      <div className="game-info">
-        <ol>{moves}</ol>
-      </div>
+
+      {isGameOver && (
+        <GameOverModal
+          winningMessage={winningMessage}
+          restartGame={resetGame}
+        />
+      )}
     </div>
   );
 }
@@ -113,4 +166,13 @@ function calculateWinner(squares) {
     }
   }
   return null;
+}
+
+function GameOverModal({ winningMessage, restartGame }) {
+  return (
+    <div className="winning-message show">
+      <div>{winningMessage}</div>
+      <button onClick={restartGame}>Restart</button>
+    </div>
+  );
 }
