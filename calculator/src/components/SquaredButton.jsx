@@ -1,5 +1,4 @@
-import { ACTIONS } from "../App";
-
+import { ACTIONS } from "../lib/Actions";
 function SquaredButton({ dispatch }) {
   return (
     <button onClick={() => dispatch({ type: ACTIONS.SQUARED })}>

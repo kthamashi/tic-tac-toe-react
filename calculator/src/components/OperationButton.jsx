@@ -1,5 +1,4 @@
-import { ACTIONS } from "../App";
-
+import { ACTIONS } from "../lib/Actions";
 export default function OperationButton({ dispatch, operation }) {
   return (
     <button

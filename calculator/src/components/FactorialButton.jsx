@@ -1,4 +1,4 @@
-import { ACTIONS } from "../App";
+import { ACTIONS } from "../lib/Actions";
 
 function FactorialButton({ dispatch }) {
   return (
